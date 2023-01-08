@@ -1,10 +1,21 @@
-import { Observable } from 'rxjs';
+import { fromEvent, EMPTY } from "rxjs";
+import { catchError, map, concatMap } from "rxjs/operators";
+import { ajax } from "rxjs/ajax";
 
-const someObservable$ = new Observable<string>(subscriber => {
-  subscriber.next('Alice');
-  subscriber.next('Ben');
-  subscriber.next('Charlie');
-  subscriber.complete();
-});
+const endpointInput: HTMLInputElement =
+  document.querySelector("input#endpoint");
+const fetchButton = document.querySelector("button#fetch");
 
-someObservable$.subscribe(value => console.log(value));
+fromEvent(fetchButton, "click")
+  .pipe(
+    map(() => endpointInput.value),
+    concatMap((value) =>
+      ajax(`https://random-data-api.com/api/${value}/random_${value}`)
+    ),
+    catchError(() => EMPTY)
+  )
+  .subscribe({
+    next: (value) => console.log(value),
+    error: (err) => console.log("Error", err),
+    complete: () => console.log("complete"),
+  });
