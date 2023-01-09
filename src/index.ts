@@ -1,21 +1,28 @@
-import { fromEvent, EMPTY } from "rxjs";
-import { catchError, map, concatMap } from "rxjs/operators";
-import { ajax } from "rxjs/ajax";
+import { Subject, fromEvent, BehaviorSubject } from "rxjs";
+import { withLatestFrom } from "rxjs/operators";
 
-const endpointInput: HTMLInputElement =
-  document.querySelector("input#endpoint");
-const fetchButton = document.querySelector("button#fetch");
+const loggedInSpan: HTMLElement = document.querySelector("span#logged-in");
+const loginButton: HTMLElement = document.querySelector("button#login");
+const logoutButton: HTMLElement = document.querySelector("button#logout");
+const printStateButton: HTMLElement =
+  document.querySelector("button#print-state");
 
-fromEvent(fetchButton, "click")
-  .pipe(
-    map(() => endpointInput.value),
-    concatMap((value) =>
-      ajax(`https://random-data-api.com/api/${value}/random_${value}`)
-    ),
-    catchError(() => EMPTY)
-  )
-  .subscribe({
-    next: (value) => console.log(value),
-    error: (err) => console.log("Error", err),
-    complete: () => console.log("complete"),
-  });
+const isLoggedIn$ = new BehaviorSubject<boolean>(false);
+
+fromEvent(loginButton, "click").subscribe(() => isLoggedIn$.next(true));
+fromEvent(logoutButton, "click").subscribe(() => isLoggedIn$.next(false));
+
+//Navigation bar
+isLoggedIn$.subscribe(
+  (isLoggedIn) => (loggedInSpan.innerText = isLoggedIn.toString())
+);
+
+//Buttons
+isLoggedIn$.subscribe((isLoggedIn) => {
+  logoutButton.style.display = isLoggedIn ? "block" : "none";
+  loginButton.style.display = !isLoggedIn ? "block" : "none";
+});
+
+fromEvent(printStateButton, "click")
+  .pipe(withLatestFrom(isLoggedIn$))
+  .subscribe(([event, isLoggedIn]) => console.log(isLoggedIn));
