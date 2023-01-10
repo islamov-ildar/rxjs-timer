@@ -1,28 +1,65 @@
-import { Subject, fromEvent, BehaviorSubject } from "rxjs";
-import { withLatestFrom } from "rxjs/operators";
+import { fromEvent, Subject, Observable, interval } from "rxjs";
+import { map, withLatestFrom } from "rxjs/operators";
 
-const loggedInSpan: HTMLElement = document.querySelector("span#logged-in");
-const loginButton: HTMLElement = document.querySelector("button#login");
-const logoutButton: HTMLElement = document.querySelector("button#logout");
-const printStateButton: HTMLElement =
-  document.querySelector("button#print-state");
+console.log("App has started!");
 
-const isLoggedIn$ = new BehaviorSubject<boolean>(false);
+const minusFiveBtn: HTMLElement = document.querySelector("button#minusFiveSec");
+const pauseBtn: HTMLElement = document.querySelector("button#pause");
+const startBtn: HTMLElement = document.querySelector("button#start");
+const plusFiveBtn: HTMLElement = document.querySelector("button#plusFiveSec");
+const resetBtn: HTMLElement = document.querySelector("button#reset");
+const seconds: HTMLElement = document.querySelector("#seconds");
 
-fromEvent(loginButton, "click").subscribe(() => isLoggedIn$.next(true));
-fromEvent(logoutButton, "click").subscribe(() => isLoggedIn$.next(false));
+const isStarted$ = new Subject<boolean>();
 
-//Navigation bar
-isLoggedIn$.subscribe(
-  (isLoggedIn) => (loggedInSpan.innerText = isLoggedIn.toString())
-);
-
-//Buttons
-isLoggedIn$.subscribe((isLoggedIn) => {
-  logoutButton.style.display = isLoggedIn ? "block" : "none";
-  loginButton.style.display = !isLoggedIn ? "block" : "none";
+fromEvent(startBtn, "click").subscribe(() => {
+  isStarted$.next(true);
+  console.log(isStarted$);
 });
 
-fromEvent(printStateButton, "click")
-  .pipe(withLatestFrom(isLoggedIn$))
-  .subscribe(([event, isLoggedIn]) => console.log(isLoggedIn));
+fromEvent(pauseBtn, "click").subscribe(() => {
+  isStarted$.next(false);
+  console.log(isStarted$);
+});
+
+fromEvent(plusFiveBtn, "click").subscribe(() => {
+  console.log("plusFiveBtn");
+});
+
+const timer$ = new Observable<number>((subscriber) => {
+  let count: number = 0;
+  const intervalId = setInterval(() => {
+    subscriber.next(++count);
+  }, 1000);
+
+  return () => {
+    clearInterval(intervalId);
+  };
+});
+
+// const timer$ = interval(1000);
+
+// const subscribeToTimer = timer$
+//   .pipe(withLatestFrom(isStarted$))
+//   .subscribe(([value, isStarted]) => {
+//     console.log(value);
+//     // return () => {
+//     //   clearInterval(intervalId);
+//     // };
+
+//     if (value < 10 && isStarted) {
+//       seconds.innerText = String(`0${value}`);
+//     } else if (isStarted) {
+//       seconds.innerText = String(`${value}`);
+//     }
+//     //   console.log(value);
+//   });
+
+// isStarted$.subscribe(() => {
+//   console.log("1234");
+//   let count: number = 0;
+//   const intervalId = setInterval(() => {
+//     ++count;
+//     seconds.innerText = String(`0${count}`);
+//   }, 1000);
+// });
