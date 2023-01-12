@@ -1,10 +1,4 @@
-import {
-  fromEvent,
-  BehaviorSubject,
-  interval,
-  combineLatest,
-  merge,
-} from "rxjs";
+import { fromEvent, BehaviorSubject, interval, merge } from "rxjs";
 import { filter, withLatestFrom } from "rxjs/operators";
 
 console.log("App has started!");
@@ -28,7 +22,6 @@ const pauseEvent = fromEvent(pauseBtn, "click");
 const incrementEvent = fromEvent(incrementBtn, "click");
 const decrementEvent = fromEvent(decrementBtn, "click");
 
-// combineLatest([timer$, startEvent])
 merge(timer$, startEvent)
   .pipe(
     withLatestFrom(isStarted$),
@@ -84,9 +77,4 @@ function renderSecondsOnPage(value: number) {
   const result = new Date(value * 1000).toISOString().slice(11, 19);
   console.log(result);
   seconds.innerText = result;
-  // if (value < 10) {
-  //   seconds.innerText = String(`0${value}`);
-  // } else {
-  //   seconds.innerText = String(`${value}`);
-  // }
 }
