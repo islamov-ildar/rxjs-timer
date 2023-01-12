@@ -2,8 +2,8 @@ const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 module.exports = {
-  // devtool: 'eval-source-map',
-  devtool: false,
+  devtool: "eval-source-map",
+  // devtool: false,
   entry: "./src/index.ts",
   mode: "development",
   module: {

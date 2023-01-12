@@ -1,4 +1,10 @@
-import { fromEvent, BehaviorSubject, interval, combineLatest } from "rxjs";
+import {
+  fromEvent,
+  BehaviorSubject,
+  interval,
+  combineLatest,
+  merge,
+} from "rxjs";
 import { filter, withLatestFrom } from "rxjs/operators";
 
 console.log("App has started!");
@@ -22,13 +28,15 @@ const pauseEvent = fromEvent(pauseBtn, "click");
 const incrementEvent = fromEvent(incrementBtn, "click");
 const decrementEvent = fromEvent(decrementBtn, "click");
 
-combineLatest([timer$, startEvent])
+// combineLatest([timer$, startEvent])
+merge(timer$, startEvent)
   .pipe(
-    withLatestFrom(isPaused$),
-    filter((isStarted) => isStarted[1] === false)
+    withLatestFrom(isStarted$),
+    filter((flow) => flow[1] === true)
   )
-  .subscribe(() => {
-    if (isStarted$.value) {
+  .subscribe((value) => {
+    console.log(value);
+    if (isStarted$.value && typeof value[0] === "number") {
       secondsCount.next(secondsCount.value + 1);
       console.log(secondsCount.value);
       renderSecondsOnPage(secondsCount.value);
@@ -36,12 +44,16 @@ combineLatest([timer$, startEvent])
   });
 
 startEvent.subscribe(() => {
-  isStarted$.next(true);
+  if (!isStarted$.value) {
+    isStarted$.next(true);
+  }
+  isPaused$.next(false);
   console.log(isStarted$);
 });
 
 pauseEvent.subscribe(() => {
   isStarted$.next(false);
+  isPaused$.next(true);
   console.log(isStarted$);
 });
 
