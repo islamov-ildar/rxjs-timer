@@ -1,80 +1,113 @@
-import { fromEvent, BehaviorSubject, interval, merge } from "rxjs";
-import { filter, withLatestFrom } from "rxjs/operators";
+import { fromEvent, BehaviorSubject, interval, merge, tap, map } from "rxjs";
+import { withLatestFrom } from "rxjs/operators";
 
-console.log("App has started!");
+console.log("App has Played!");
 
-const changingAmount = 5;
+enum Actions {
+  Pause,
+  Play,
+  Reset,
+  Forw,
+  Prev,
+}
+
+const changingAmount: number = 5000;
 
 const seconds: HTMLElement = document.querySelector("#time");
-const pauseBtn: HTMLElement = document.querySelector("button#pause");
-const startBtn: HTMLElement = document.querySelector("button#start");
+const playIco: HTMLElement = document.querySelector(".fa-play");
+const pauseIco: HTMLElement = document.querySelector(".fa-pause");
+const PlayBtn: HTMLElement = document.querySelector("button#start");
 const resetBtn: HTMLElement = document.querySelector("button#reset");
 const incrementBtn: HTMLElement = document.querySelector("button#increment");
 const decrementBtn: HTMLElement = document.querySelector("button#decrement");
 
-const secondsCount = new BehaviorSubject<number>(0);
-const isPaused$ = new BehaviorSubject<boolean>(false);
-const isStarted$ = new BehaviorSubject<boolean>(false);
+pauseIco.style.display = "none";
 
-const timer$ = interval(1000);
-const startEvent = fromEvent(startBtn, "click");
-const pauseEvent = fromEvent(pauseBtn, "click");
+const milliSecondCount = new BehaviorSubject<number>(0);
+const event = new BehaviorSubject<Actions>(Actions.Pause);
+
+const timer$ = interval(10);
+const PlayEvent = fromEvent(PlayBtn, "click");
+const resetEvent = fromEvent(resetBtn, "click");
 const incrementEvent = fromEvent(incrementBtn, "click");
 const decrementEvent = fromEvent(decrementBtn, "click");
 
-merge(timer$, startEvent)
+let previousEvent = Actions.Pause;
+
+merge(timer$, event)
   .pipe(
-    withLatestFrom(isStarted$),
-    filter((flow) => flow[1] === true)
+    withLatestFrom(event),
+
+    tap((value) => {
+      const act = value[1];
+      if (act === Actions.Forw) {
+        const seekAmount = milliSecondCount.value + changingAmount;
+        milliSecondCount.next(seekAmount);
+
+        if (previousEvent === Actions.Play) {
+          event.next(Actions.Play);
+        } else {
+          event.next(Actions.Pause);
+        }
+      } else if (act === Actions.Prev) {
+        const newAmount = milliSecondCount.value - changingAmount;
+        milliSecondCount.next(Math.max(0, newAmount));
+
+        if (previousEvent === Actions.Play) {
+          event.next(Actions.Play);
+        } else {
+          event.next(Actions.Pause);
+        }
+      } else if (act === Actions.Reset) {
+        milliSecondCount.next(0);
+        renderPlayPauseIco("play");
+      } else if (act === Actions.Play) {
+        milliSecondCount.next(milliSecondCount.value + 10);
+      }
+    }),
+
+    tap((value) => {
+      previousEvent = value[1];
+    }),
+
+    withLatestFrom(event),
+
+    map(() => {
+      return new Date(milliSecondCount.value).toISOString().slice(11, 22);
+    })
   )
   .subscribe((value) => {
-    console.log(value);
-    if (isStarted$.value && typeof value[0] === "number") {
-      secondsCount.next(secondsCount.value + 1);
-      console.log(secondsCount.value);
-      renderSecondsOnPage(secondsCount.value);
-    }
+    seconds.innerText = value;
   });
 
-startEvent.subscribe(() => {
-  if (!isStarted$.value) {
-    isStarted$.next(true);
+PlayEvent.subscribe(() => {
+  if (event.value === Actions.Play) {
+    event.next(Actions.Pause);
+    renderPlayPauseIco("play");
+  } else {
+    event.next(Actions.Play);
+    renderPlayPauseIco("pause");
   }
-  isPaused$.next(false);
-  console.log(isStarted$);
-});
-
-pauseEvent.subscribe(() => {
-  isStarted$.next(false);
-  isPaused$.next(true);
-  console.log(isStarted$);
 });
 
 incrementEvent.subscribe(() => {
-  console.log("incrementBtn");
-  secondsCount.next(secondsCount.value + changingAmount);
-  renderSecondsOnPage(secondsCount.value);
+  event.next(Actions.Forw);
 });
 
 decrementEvent.subscribe(() => {
-  console.log("decrementBtn");
-  if (secondsCount.value < changingAmount) {
-    secondsCount.next(0);
-  } else {
-    secondsCount.next(secondsCount.value - changingAmount);
+  event.next(Actions.Prev);
+});
+
+resetEvent.subscribe(() => {
+  event.next(Actions.Reset);
+});
+
+function renderPlayPauseIco(status: string): void {
+  if (status === "play") {
+    playIco.style.display = "contents";
+    pauseIco.style.display = "none";
+  } else if (status === "pause") {
+    playIco.style.display = "none";
+    pauseIco.style.display = "contents";
   }
-  renderSecondsOnPage(secondsCount.value);
-});
-
-fromEvent(resetBtn, "click").subscribe(() => {
-  console.log("resetBtn");
-  seconds.innerText = String(`00:00:00`);
-  isStarted$.next(false);
-  secondsCount.next(0);
-});
-
-function renderSecondsOnPage(value: number) {
-  const result = new Date(value * 1000).toISOString().slice(11, 19);
-  console.log(result);
-  seconds.innerText = result;
 }
